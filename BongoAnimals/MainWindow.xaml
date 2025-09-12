@@ -5,16 +5,21 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:BongoAnimals"
         mc:Ignorable="d"
-        Title="MainWindow" Height="112" Width="112"
+        Title="MainWindow" Height="152" Width="112"
         AllowsTransparency="True"
         WindowStyle="None"
         Background="Transparent"
         Topmost="True"
         MouseLeftButtonDown="Window_MouseLeftButtonDown"
         WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing"
         >
-    <Grid>
-        <Image Name="PetImage" Width="112" Height="112"/>
-        <TextBlock Name="CounterLabel" Text="0" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="32" Foreground="Red" RenderTransformOrigin="0.558,0.47"/>
-    </Grid>
+    <Canvas x:Name="MainCanvas">
+        <Grid x:Name="PetContainer" MouseLeave="PetImage_MouseLeave" MouseEnter="PetImage_MouseEnter"> 
+            <Image x:Name="PetImage" Source="/Assets/pet_gif.gif" Width="112" Height="112"/>
+            <Border x:Name="CounterPanel" Background="#cfcfcf" BorderBrush="#121212" BorderThickness="5" CornerRadius="0" VerticalAlignment="Bottom" HorizontalAlignment="Center" Visibility="Collapsed" Width="112" Height="30" Margin="0,0,0,-40">
+                <TextBlock x:Name="CounterText" Foreground="#121212" FontSize="16" FontWeight="Bold" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,0"/>
+            </Border>
+        </Grid>
+    </Canvas>
 </Window>

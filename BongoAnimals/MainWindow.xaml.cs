@@ -68,7 +68,7 @@ namespace BongoAnimals
         {
             if (_isDragging)
             {
-                Point mousePos = PointToScreen(e.GetPosition(this));
+                Point mousePos = PointToScreen(e.GetPosition(MainCanvas));
                 double newLeft = (mousePos.X - _dragStartPoint.X);
                 double newTop = (mousePos.Y - _dragStartPoint.Y);
 
@@ -79,15 +79,17 @@ namespace BongoAnimals
                 double minX = 0;
                 double minY = 0;
                 double maxX = screenWidth - Width;
-                double maxY = screenHeight;
+                double maxY = screenHeight+40;
 
-                if (newTop + Height > screenHeight - taskbarHeight)
+                if (newTop + Height > screenHeight - taskbarHeight + 40)
                 {
-                    newTop = screenHeight - taskbarHeight - Height;
+                    newTop = screenHeight - taskbarHeight - Height + 40;
                 }
 
                 Left = Math.Max(minX, Math.Min(maxX, newLeft));
                 Top = Math.Max(minY, Math.Min(maxY, newTop));
+
+
             }
         }
 
@@ -106,6 +108,8 @@ namespace BongoAnimals
             int style = GetWindowLong(hwnd, GWL_EXSTYLE);
             style &= ~(WS_THICKFRAME | WS_CAPTION); 
             SetWindowLong(hwnd, GWL_EXSTYLE, style);
+
+            LoadProgress();
 
             HwndSource.FromHwnd(hwnd).AddHook(WndProc);
         }
@@ -158,12 +162,24 @@ namespace BongoAnimals
                     _mainWindow = (MainWindow)Application.Current.MainWindow;
                 }
                 _mainWindow._counter++;
-                Application.Current.Dispatcher.Invoke(() =>
+                _mainWindow.Dispatcher.Invoke(() =>
                 {
-                    _mainWindow.CounterLabel.Text = _mainWindow._counter.ToString();
+                    _mainWindow.CounterText.Text = _mainWindow._counter.ToString();
                 });
             }
             return CallNextHookEx(_hookID, nCode, wParam, lParam);
+        }
+
+        private void PetImage_MouseEnter(object sender, MouseEventArgs e)
+        {
+            CounterText.Text = _counter.ToString();
+            CounterPanel.Visibility = Visibility.Visible;
+        }
+
+        private void PetImage_MouseLeave(object sender, MouseEventArgs e)
+        {
+            if(!PetContainer.IsMouseOver && !_isDragging)
+                CounterPanel.Visibility = Visibility.Collapsed;
         }
 
         private static IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
@@ -183,9 +199,9 @@ namespace BongoAnimals
                             _mainWindow = (MainWindow)Application.Current.MainWindow;
                         }
                         _mainWindow._counter++;
-                        Application.Current.Dispatcher.Invoke(() =>
+                        _mainWindow.Dispatcher.Invoke(() =>
                         {
-                            _mainWindow.CounterLabel.Text = _mainWindow._counter.ToString();
+                            _mainWindow.CounterText.Text = _mainWindow._counter.ToString();
                         });
                     }
 
@@ -202,8 +218,25 @@ namespace BongoAnimals
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _isDragging = true;
-            _dragStartPoint = e.GetPosition(this);
+            _dragStartPoint = e.GetPosition(PetContainer);
             CaptureMouse();
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            SaveProgress();
+        }
+
+        private void SaveProgress()
+        {
+            Properties.Settings.Default.Counter = _counter.ToString();
+            Properties.Settings.Default.Save();
+        }
+
+        private void LoadProgress()
+        {
+            _counter = Convert.ToInt32(Properties.Settings.Default.Counter);
+            CounterText.Text = _counter.ToString();
         }
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
