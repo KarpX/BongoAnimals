@@ -5,21 +5,49 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:BongoAnimals"
         mc:Ignorable="d"
-        Title="MainWindow" Height="152" Width="112"
+        Title="MainWindow" Height="{x:Static SystemParameters.PrimaryScreenHeight}" Width="{x:Static SystemParameters.PrimaryScreenWidth}"
         AllowsTransparency="True"
         WindowStyle="None"
         Background="Transparent"
         Topmost="True"
-        MouseLeftButtonDown="Window_MouseLeftButtonDown"
         WindowStartupLocation="CenterScreen"
         Closing="Window_Closing"
+        WindowState="Maximized"
+        ResizeMode="NoResize"
         >
-    <Canvas x:Name="MainCanvas">
-        <Grid x:Name="PetContainer" MouseLeave="PetImage_MouseLeave" MouseEnter="PetImage_MouseEnter"> 
-            <Image x:Name="PetImage" Source="/Assets/pet_gif.gif" Width="112" Height="112"/>
-            <Border x:Name="CounterPanel" Background="#cfcfcf" BorderBrush="#121212" BorderThickness="5" CornerRadius="0" VerticalAlignment="Bottom" HorizontalAlignment="Center" Visibility="Collapsed" Width="112" Height="30" Margin="0,0,0,-40">
-                <TextBlock x:Name="CounterText" Foreground="#121212" FontSize="16" FontWeight="Bold" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,0"/>
-            </Border>
+    <Canvas x:Name="MainCanvas" Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}}" Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Window}}">
+        <Grid x:Name="PetContainer" Width="112" Height="147" Background="#01FFFFFF" MouseLeftButtonDown="PetContainer_MouseLeftButtonDown" MouseLeftButtonUp="PetContainer_MouseLeftButtonUp" MouseLeave="PetImage_MouseLeave" MouseEnter="PetImage_MouseEnter" Canvas.Left="10" Canvas.Top="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Image x:Name="PetImage" Source="/Assets/pet_gif.gif" Grid.Row="0" Width="112" Height="112" HorizontalAlignment="Center"/>
+            <Rectangle x:Name="SplitRectangle" Height="5" Grid.Row="1" Fill="#01FFFFFF"></Rectangle>
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="2"/>
+                    <ColumnDefinition Width="30"/>
+                </Grid.ColumnDefinitions>
+                <Border x:Name="CounterPanel" Grid.Column="0" Background="{StaticResource PrimaryBrush}" BorderBrush="{StaticResource SecondaryBrush}" BorderThickness="1" VerticalAlignment="Bottom" HorizontalAlignment="Left" Visibility="Hidden" Width="80" Height="30" Margin="0,0,0,0">
+                    <TextBlock x:Name="CounterText" Foreground="#121212" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,0"/>
+                </Border>
+                <Rectangle x:Name="SplitRectangle2" Grid.Column="1" Fill="#01FFFFFF" Width="2" Height="30"/>
+                <Border x:Name="SettingBtn" Grid.Column="2" MouseLeftButtonDown="SettingBtn_MouseLeftButtonDown" Background="{StaticResource PrimaryBrush}" BorderBrush="{StaticResource SecondaryBrush}" BorderThickness="1" VerticalAlignment="Bottom" HorizontalAlignment="Right" Visibility="Hidden" Width="30" Height="30" Margin="0,0,0,0">
+                    <Image Source="/Assets/burger_ico.png" HorizontalAlignment="Center" VerticalAlignment="Center" Width="16" Height="16"/>
+                </Border>
+            </Grid>
         </Grid>
+
+        <StackPanel x:Name="SettingsPanel"
+            Visibility="Collapsed"
+            Background="{StaticResource PrimaryBrush}"
+            Width="252"
+            Height="378"
+            Margin="0, 0, 0, 0"
+            Orientation="Vertical">
+            <TextBlock Text="Settings Panel" FontSize="24" FontWeight="Bold" Margin="10"/>
+        </StackPanel>
     </Canvas>
 </Window>

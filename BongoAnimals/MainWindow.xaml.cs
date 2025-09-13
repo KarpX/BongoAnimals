@@ -17,6 +17,8 @@ using System.Runtime.InteropServices;
 using System.Net.NetworkInformation;
 using WpfAnimatedGif;
 using System.Windows.Interop;
+using System.Dynamic;
+using System.Data.SqlTypes;
 
 namespace BongoAnimals
 {
@@ -51,11 +53,22 @@ namespace BongoAnimals
 
             ImageBehavior.SetAnimatedSource(PetImage, image);
 
-            Loaded += MainWindow_Loaded;
+            Loaded +=  MainWindow_Loaded;
 
-            MouseLeftButtonDown += Window_MouseLeftButtonDown;
             MouseMove += Window_MouseMove;
             MouseLeftButtonUp += Window_MouseLeftButtonUp;
+            this.Deactivated += settings_deactivated;
+
+            Loaded += (s, e) =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    Point savedLocation = Properties.Settings.Default.PetLocation;
+                    Canvas.SetLeft(PetContainer, savedLocation.X);
+                    Canvas.SetTop(PetContainer, savedLocation.Y);
+                }, System.Windows.Threading.DispatcherPriority.Render);
+            };
+
         }
 
         private void Window_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -68,30 +81,38 @@ namespace BongoAnimals
         {
             if (_isDragging)
             {
-                Point mousePos = PointToScreen(e.GetPosition(MainCanvas));
-                double newLeft = (mousePos.X - _dragStartPoint.X);
-                double newTop = (mousePos.Y - _dragStartPoint.Y);
+                Point mousePos = e.GetPosition(this);
+
+                double offsetX = mousePos.X - _dragStartPoint.X;
+                double offsetY = mousePos.Y - _dragStartPoint.Y;
+
+                double containerWidth = PetImage.ActualWidth;
+                double containerHeight = PetImage.ActualHeight;
 
                 double screenWidth = SystemParameters.PrimaryScreenWidth;
                 double screenHeight = SystemParameters.PrimaryScreenHeight;
+
+                double newLeft = Canvas.GetLeft(PetContainer) + offsetX;
+                double newTop = Canvas.GetTop(PetContainer) + offsetY;
+
                 double taskbarHeight = GetTaskBarHeight();
+                double taskbarTop = screenHeight - taskbarHeight;
 
-                double minX = 0;
-                double minY = 0;
-                double maxX = screenWidth - Width;
-                double maxY = screenHeight+40;
+                newLeft = Math.Max(0, Math.Min(newLeft, Width - containerWidth));
+                newTop = Math.Max(0, Math.Min(newTop, Height - containerHeight));
 
-                if (newTop + Height > screenHeight - taskbarHeight + 40)
-                {
-                    newTop = screenHeight - taskbarHeight - Height + 40;
-                }
+                Canvas.SetLeft(PetContainer, newLeft);
+                Canvas.SetTop(PetContainer, newTop);
 
-                Left = Math.Max(minX, Math.Min(maxX, newLeft));
-                Top = Math.Max(minY, Math.Min(maxY, newTop));
+                UpdateSettingsPosition();
 
-
+                _dragStartPoint = mousePos;
             }
         }
+
+        
+
+        private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
 
         private double GetTaskBarHeight()
         {
@@ -113,6 +134,7 @@ namespace BongoAnimals
 
             HwndSource.FromHwnd(hwnd).AddHook(WndProc);
         }
+
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
@@ -149,13 +171,15 @@ namespace BongoAnimals
 
         private const int WH_MOUSE_LL = 14;
         private const int WM_LBUTTONDOWN = 0x0201;
+        private const int WM_WHEELBUTTONDOWN = 0x0207;
+        private const int WM_RBUTTONDOWN = 0x0204;
         private const int WH_keyboard_LL = 13;
         private const int WM_KEYDOWN = 0x0100;
         private static MainWindow _mainWindow;
 
         private static IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (nCode >= 0 && wParam == (IntPtr)WM_LBUTTONDOWN)
+            if (nCode >= 0 && wParam == (IntPtr)WM_LBUTTONDOWN || wParam == (IntPtr)WM_WHEELBUTTONDOWN || wParam == (IntPtr)WM_RBUTTONDOWN)
             {
                 if (_mainWindow == null)
                 {
@@ -174,12 +198,18 @@ namespace BongoAnimals
         {
             CounterText.Text = _counter.ToString();
             CounterPanel.Visibility = Visibility.Visible;
+            SettingBtn.Visibility = Visibility.Visible;
         }
 
         private void PetImage_MouseLeave(object sender, MouseEventArgs e)
         {
-            if(!PetContainer.IsMouseOver && !_isDragging)
-                CounterPanel.Visibility = Visibility.Collapsed;
+            if (_isDragging) return;
+
+            if (!PetContainer.IsMouseOver)
+            {
+                CounterPanel.Visibility = Visibility.Hidden;
+                SettingBtn.Visibility = Visibility.Hidden;
+            }
         }
 
         private static IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
@@ -215,13 +245,6 @@ namespace BongoAnimals
             return CallNextHookEx(_keyboardHookID, nCode, wParam, lParam);
         }
 
-        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            _isDragging = true;
-            _dragStartPoint = e.GetPosition(PetContainer);
-            CaptureMouse();
-        }
-
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             SaveProgress();
@@ -230,6 +253,7 @@ namespace BongoAnimals
         private void SaveProgress()
         {
             Properties.Settings.Default.Counter = _counter.ToString();
+            Properties.Settings.Default.PetLocation = new Point(Canvas.GetLeft(PetContainer), Canvas.GetTop(PetContainer));
             Properties.Settings.Default.Save();
         }
 
@@ -238,6 +262,10 @@ namespace BongoAnimals
             _counter = Convert.ToInt32(Properties.Settings.Default.Counter);
             CounterText.Text = _counter.ToString();
         }
+
+
+
+        #region Win32
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern IntPtr SetWindowsHookEx(int idHook, IntPtr lpfn, IntPtr hMod, uint dwThreadId);
@@ -257,6 +285,10 @@ namespace BongoAnimals
 
         [DllImport("user32.dll")]
         private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+        [DllImport("user32.dll")]
+        private static extern int SetWindowLong(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint uFlags);
+        #endregion
 
         [StructLayout(LayoutKind.Sequential)]
         private struct APPBARDATA
@@ -285,5 +317,89 @@ namespace BongoAnimals
 
         [DllImport("shell32.dll")]
         private static extern uint SHAppBarMessage(ABMsg dwMessage, ref APPBARDATA pData);
+
+        public void SettingBtn_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (SettingsPanel.Visibility == Visibility.Visible)
+            {
+                SettingsPanel.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    UpdateSettingsPosition();
+                }), System.Windows.Threading.DispatcherPriority.Loaded);
+                
+
+                SettingsPanel.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void UpdateSettingsPosition()
+        {
+            double petLeft = Canvas.GetLeft(PetContainer);
+            double petTop = Canvas.GetTop(PetContainer);
+            double petWidth = PetContainer.ActualWidth;
+            double petHeight = PetContainer.ActualHeight;
+
+            double panelWidth = SettingsPanel.ActualWidth;
+            double panelHeight = SettingsPanel.ActualHeight;
+
+            double screenWidth = SystemParameters.PrimaryScreenWidth;
+            double screenHeight = SystemParameters.PrimaryScreenHeight;
+            double taskbarHeight = GetTaskBarHeight();
+
+            double margin = 10;
+
+            double panelLeft = petLeft + petWidth / 2 - panelWidth / 2;
+            double panelTop = petTop - panelHeight - margin;
+            
+            if (panelLeft + panelWidth > screenWidth)
+            {
+                panelLeft = petLeft - margin - panelWidth;
+                panelTop = petTop - panelHeight + petHeight - 35;
+            }
+            else if (panelLeft < 0)
+            {
+                panelLeft = petLeft + petWidth + margin;
+                panelTop = petTop - panelHeight + petHeight - 35;
+            }
+            if (panelTop < 0)
+            {
+                panelTop = petTop + petHeight + margin;
+            }
+
+            Canvas.SetLeft(SettingsPanel, panelLeft);
+            Canvas.SetTop(SettingsPanel, panelTop);
+        }
+
+        private void settings_deactivated(object sender, EventArgs e)
+        {
+            SettingsPanel.Visibility = Visibility.Collapsed;
+        }
+
+        private void PetContainer_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _isDragging = true;
+            _dragStartPoint = e.GetPosition(this);
+            PetContainer.CaptureMouse();
+        }
+
+        private void PetContainer_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            double screenHeight = SystemParameters.PrimaryScreenHeight;
+
+            if (Canvas.GetTop(PetContainer) + PetImage.Height > screenHeight - GetTaskBarHeight() - 20)
+            {
+                double newTop = Height - GetTaskBarHeight() - PetImage.Height;
+                Canvas.SetTop(PetContainer, newTop);
+                UpdateSettingsPosition();
+            }
+
+            _isDragging = false;
+            PetContainer.ReleaseMouseCapture();
+        }
     }
 }
