@@ -102,7 +102,7 @@
     <Resource Include="Assets\pet_gif.gif" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="userdata.txt" />
+    <Resource Include="Assets\burger_ico.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

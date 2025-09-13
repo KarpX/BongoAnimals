@@ -4,6 +4,12 @@
              xmlns:local="clr-namespace:BongoAnimals"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <Color x:Key="PrimaryColor">#cfcfcf</Color>
+        <Color x:Key="SecondaryColor">#121212</Color>
+        <Color x:Key="TextColor">#121212</Color>
+
+        <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}"/>
+        <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource SecondaryColor}"/>
+        <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextColor}"/>
     </Application.Resources>
 </Application>
