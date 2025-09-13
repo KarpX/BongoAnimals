@@ -1,5 +1,5 @@
 # BongoAnimals
-##This project is inspired by [bongo cat](https://github.com/luinbytes/bongocat/releases). 
+## This project is inspired by [bongo cat](https://github.com/luinbytes/bongocat/releases). 
 Made for non-commercial use.
 
 >[!IMPORTANT]
