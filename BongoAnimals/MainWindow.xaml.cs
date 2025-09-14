@@ -19,6 +19,7 @@ using WpfAnimatedGif;
 using System.Windows.Interop;
 using System.Dynamic;
 using System.Data.SqlTypes;
+using WF = System.Windows.Forms;
 
 namespace BongoAnimals
 {
@@ -30,6 +31,7 @@ namespace BongoAnimals
         private static IntPtr _hookID = IntPtr.Zero;
         private static IntPtr _keyboardHookID = IntPtr.Zero;
         private int _counter = 0;
+        private int _selectedMonitor = 0;
 
         private static HashSet<int> _pressedKeys = new HashSet<int>();
 
@@ -89,14 +91,8 @@ namespace BongoAnimals
                 double containerWidth = PetImage.ActualWidth;
                 double containerHeight = PetImage.ActualHeight;
 
-                double screenWidth = SystemParameters.PrimaryScreenWidth;
-                double screenHeight = SystemParameters.PrimaryScreenHeight;
-
                 double newLeft = Canvas.GetLeft(PetContainer) + offsetX;
                 double newTop = Canvas.GetTop(PetContainer) + offsetY;
-
-                double taskbarHeight = GetTaskBarHeight();
-                double taskbarTop = screenHeight - taskbarHeight;
 
                 newLeft = Math.Max(0, Math.Min(newLeft, Width - containerWidth));
                 newTop = Math.Max(0, Math.Min(newTop, Height - containerHeight));
@@ -110,17 +106,26 @@ namespace BongoAnimals
             }
         }
 
-        
+        private WF.Screen GetCurrentScreen()
+        {
+            var windowCenter = new System.Drawing.Point(
+                (int)(this.Left + this.Width / 2),
+                (int)(this.Top + this.Height / 2));
+
+            var screen = WF.Screen.AllScreens.FirstOrDefault(s => s.Bounds.Contains(windowCenter));
+
+            return screen ?? WF.Screen.PrimaryScreen;
+        }
 
         private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
 
-        private double GetTaskBarHeight()
+        private double GetTaskBarHeight(WF.Screen screen)
         {
-            APPBARDATA abd = new APPBARDATA();
-            abd.cbSize = Marshal.SizeOf(abd);
-            SHAppBarMessage(ABMsg.ABM_GETTASKBARPOS, ref abd);
+            var workingArea = screen.WorkingArea;
 
-            return abd.rc.bottom - abd.rc.top;
+            var bounds = screen.Bounds;
+
+            return bounds.Height - workingArea.Height;
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -135,6 +140,32 @@ namespace BongoAnimals
             HwndSource.FromHwnd(hwnd).AddHook(WndProc);
         }
 
+        private void LoadMonitors()
+        {
+            MonitorsList.SelectionChanged -= MonitorsList_SelectionChanged;
+
+            MonitorsList.Items.Clear();
+            int i = 1;
+            foreach (var screen in WF.Screen.AllScreens)
+            {
+                MonitorsList.Items.Add($"Screen {i} ({screen.Bounds.Width}x{screen.Bounds.Height})");
+                i += 1;
+            }
+            Console.WriteLine($"Selected screen: {_selectedMonitor}");
+
+            MonitorsList.SelectedIndex = _selectedMonitor;
+
+            MonitorsList.SelectionChanged += MonitorsList_SelectionChanged;
+
+            if (WF.Screen.AllScreens.Length > 1)
+            {
+                ChangeMonCard.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                ChangeMonCard.Visibility = Visibility.Collapsed;
+            }
+        }
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
@@ -254,6 +285,7 @@ namespace BongoAnimals
         {
             Properties.Settings.Default.Counter = _counter.ToString();
             Properties.Settings.Default.PetLocation = new Point(Canvas.GetLeft(PetContainer), Canvas.GetTop(PetContainer));
+            Properties.Settings.Default.SelectedMonitor = _selectedMonitor;
             Properties.Settings.Default.Save();
         }
 
@@ -261,6 +293,8 @@ namespace BongoAnimals
         {
             _counter = Convert.ToInt32(Properties.Settings.Default.Counter);
             CounterText.Text = _counter.ToString();
+            _selectedMonitor = Properties.Settings.Default.SelectedMonitor;
+            MoveToScreen(_selectedMonitor);
         }
 
 
@@ -332,6 +366,7 @@ namespace BongoAnimals
                     UpdateSettingsPosition();
                 }), System.Windows.Threading.DispatcherPriority.Loaded);
                 
+                LoadMonitors();
 
                 SettingsPanel.Visibility = Visibility.Visible;
             }
@@ -339,6 +374,8 @@ namespace BongoAnimals
 
         private void UpdateSettingsPosition()
         {
+            var screen = GetCurrentScreen();
+
             double petLeft = Canvas.GetLeft(PetContainer);
             double petTop = Canvas.GetTop(PetContainer);
             double petWidth = PetContainer.ActualWidth;
@@ -347,9 +384,9 @@ namespace BongoAnimals
             double panelWidth = SettingsPanel.ActualWidth;
             double panelHeight = SettingsPanel.ActualHeight;
 
-            double screenWidth = SystemParameters.PrimaryScreenWidth;
-            double screenHeight = SystemParameters.PrimaryScreenHeight;
-            double taskbarHeight = GetTaskBarHeight();
+            double screenWidth = screen.Bounds.Width;
+            double screenHeight = screen.Bounds.Height;
+            double taskbarHeight = GetTaskBarHeight(screen);
 
             double margin = 10;
 
@@ -389,17 +426,85 @@ namespace BongoAnimals
 
         private void PetContainer_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            double screenHeight = SystemParameters.PrimaryScreenHeight;
+            var screen = GetCurrentScreen();
 
-            if (Canvas.GetTop(PetContainer) + PetImage.Height > screenHeight - GetTaskBarHeight() - 20)
+            double screenHeight = screen.Bounds.Height;
+
+            if (Canvas.GetTop(PetContainer) + PetImage.Height > screenHeight - GetTaskBarHeight(screen) - 20)
             {
-                double newTop = Height - GetTaskBarHeight() - PetImage.Height;
+                double newTop = Height - GetTaskBarHeight(screen) - PetImage.Height;
                 Canvas.SetTop(PetContainer, newTop);
                 UpdateSettingsPosition();
             }
 
             _isDragging = false;
             PetContainer.ReleaseMouseCapture();
+        }
+
+
+
+        private void MoveToScreen(int screenIndex)
+        {
+            
+            var screens = WF.Screen.AllScreens;
+
+            if (screenIndex < 0)
+            {
+                return;
+            }
+
+            if (screenIndex >= screens.Length)
+            {
+                screenIndex = 0;
+                _selectedMonitor = 0;
+            }
+
+            var screen = screens[screenIndex];
+
+            if (this.WindowState == WindowState.Maximized)
+                this.WindowState = WindowState.Normal;
+
+            this.Left = screen.Bounds.X;
+            this.Top = screen.Bounds.Y;
+
+            if (this.WindowState == WindowState.Normal)
+                this.WindowState = WindowState.Maximized;
+
+            changePetLocation();
+            UpdateSettingsPosition();
+            Console.WriteLine($"{Canvas.GetTop(PetContainer)}, {Canvas.GetLeft(PetContainer)}");
+        }
+
+        private void MonitorsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            _selectedMonitor = MonitorsList.SelectedIndex;
+            MoveToScreen(MonitorsList.SelectedIndex);
+        }
+
+        private void changePetLocation()
+        {
+            var screen = GetCurrentScreen();
+
+            double petLeft = Canvas.GetLeft(PetContainer);
+            double petTop = Canvas.GetTop(PetContainer);
+
+            double petHeight = PetContainer.ActualHeight;
+            double petWidth = PetContainer.ActualWidth;
+
+            double taskBarHeight = GetTaskBarHeight(screen);
+            double taskbarTop = screen.Bounds.Height - taskBarHeight;
+
+            if (petTop > taskbarTop){
+                petTop = taskbarTop - PetImage.ActualHeight;           
+            }
+
+            if (petLeft + petWidth > screen.Bounds.Width)
+            {
+                petLeft = screen.Bounds.Width - petWidth;
+            }
+
+            Canvas.SetTop(PetContainer, petTop);
+            Canvas.SetLeft(PetContainer, petLeft);
         }
     }
 }

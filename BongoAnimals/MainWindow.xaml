@@ -47,7 +47,27 @@
             Height="378"
             Margin="0, 0, 0, 0"
             Orientation="Vertical">
-            <TextBlock Text="Settings Panel" FontSize="24" FontWeight="Bold" Margin="10"/>
+            <Border x:Name="SettingHeader" Background="Red" Width="252" Height="35">
+                <TextBlock Text="Settings Panel" FontSize="20" FontWeight="Bold"/>
+            </Border>
+            <Rectangle Height="2" Fill="{StaticResource TextBrush}"></Rectangle>
+            <Border x:Name="ChangeMonCard" Background="AntiqueWhite" Width="252" Height="Auto" >
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock x:Name="ChangeMonText" Text="Change monitor" Grid.Row="0" Foreground="{StaticResource TextBrush}" FontSize="16" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="MonitorsList" Grid.Row="1" Width="252" SelectionChanged="MonitorsList_SelectionChanged">
+                        <ComboBox.ItemContainerStyle>
+                            <Style TargetType="ComboBoxItem">
+                                <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+                                <Setter Property="FontSize" Value="14" />
+                            </Style>
+                        </ComboBox.ItemContainerStyle>
+                    </ComboBox>
+                </Grid>
+            </Border>
         </StackPanel>
     </Canvas>
 </Window>
