@@ -68,6 +68,9 @@
                     </ComboBox>
                 </Grid>
             </Border>
+            <Border x:Name="TaskBarBindingBorder" Background="{StaticResource PrimaryBrush}" Width="252" Height="Auto" Margin="10" MouseLeftButtonDown="TaskBarBindingBorder_MouseLeftButtonDown">
+                <TextBlock x:Name="TaskBarBindindText" Text="Bind to taskbar" FontSize="16" Foreground="{StaticResource TextBrush}"/>
+            </Border>
         </StackPanel>
     </Canvas>
 </Window>
