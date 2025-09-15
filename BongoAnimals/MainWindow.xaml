@@ -23,6 +23,10 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Image x:Name="PetImage" Source="/Assets/pet_gif.gif" Grid.Row="0" Width="112" Height="112" HorizontalAlignment="Center"/>
+            <Grid x:Name="HoldIndicator" Width="112" Height="112" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Top">
+                <Ellipse Stroke="Transparent" StrokeThickness="3" Opacity="0.3" Fill="Transparent"/>
+                <Path x:Name="HoldProgress" Fill="Gray" Opacity="0.8"/>
+            </Grid>
             <Rectangle x:Name="SplitRectangle" Height="5" Grid.Row="1" Fill="#01FFFFFF"></Rectangle>
             <Grid Grid.Row="2">
                 <Grid.ColumnDefinitions>
@@ -68,9 +72,28 @@
                     </ComboBox>
                 </Grid>
             </Border>
-            <Border x:Name="TaskBarBindingBorder" Background="{StaticResource PrimaryBrush}" Width="252" Height="Auto" Margin="10" MouseLeftButtonDown="TaskBarBindingBorder_MouseLeftButtonDown">
-                <TextBlock x:Name="TaskBarBindindText" Text="Bind to taskbar" FontSize="16" Foreground="{StaticResource TextBrush}"/>
+            
+            <Border x:Name="TaskbarSnappingBorder" Background="AntiqueWhite" Width="252" Height="Auto" MouseLeftButtonDown="TaskBarBindingBorder_MouseLeftButtonDown">
+                <TextBlock x:Name="TaskbarSnappingText" Text="[X] Snapping" FontSize="16" Foreground="{StaticResource TextBrush}"/>
             </Border>
+
+            <Border x:Name="MoveBlockBorder" Background="AntiqueWhite" Width="252" Height="Auto" MouseLeftButtonDown="MoveBlockBorder_MouseLeftButtonDown">
+                <TextBlock x:Name="MoveBlockText" Text="[ ] Block moving" FontSize="16" Foreground="{StaticResource TextBrush}"/>
+            </Border>
+
+            <Border x:Name="DangerousOptionsBorder" Background="Red" Width="252" Height="Auto" MouseLeftButtonDown="OpenDangerousOptions">
+                <TextBlock Text="Danger Menu" FontSize="16" Foreground="{StaticResource TextBrush}"/>
+            </Border>
+            <StackPanel x:Name="DangerousOptionsList"
+            Visibility="Collapsed"
+            Background="{StaticResource PrimaryBrush}"
+            Width="252"
+            Height="Auto"
+            Orientation="Vertical">
+                <Border x:Name="ClearCounterBorder" Background="AntiqueWhite" Width="252" Height="Auto" MouseLeftButtonDown="ClearCounter_MouseLeftButtonDown">
+                    <TextBlock Text="Reset counter" FontSize="16" Foreground="{StaticResource TextBrush}"/>
+                </Border>
+            </StackPanel>
         </StackPanel>
     </Canvas>
 </Window>
