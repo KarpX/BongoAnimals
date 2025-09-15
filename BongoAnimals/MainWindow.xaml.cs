@@ -32,6 +32,7 @@ namespace BongoAnimals
         private static IntPtr _keyboardHookID = IntPtr.Zero;
         private int _counter = 0;
         private int _selectedMonitor = 0;
+        private bool _bindingToTaskbar = true;
 
         private static HashSet<int> _pressedKeys = new HashSet<int>();
 
@@ -430,6 +431,15 @@ namespace BongoAnimals
 
         private void PetContainer_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
+            if (_bindingToTaskbar)
+                PetLinkToTaskbar();
+
+            _isDragging = false;
+            PetContainer.ReleaseMouseCapture();
+        }
+
+        private void PetLinkToTaskbar()
+        {
             var screen = GetCurrentScreen();
             var (scaleX, scaleY) = GetScaleFactor();
 
@@ -444,12 +454,7 @@ namespace BongoAnimals
                 Canvas.SetTop(PetContainer, newTop / scaleY);
                 UpdateSettingsPosition();
             }
-
-            _isDragging = false;
-            PetContainer.ReleaseMouseCapture();
         }
-
-
 
         private void MoveToScreen(int screenIndex)
         {
@@ -525,6 +530,12 @@ namespace BongoAnimals
                 return (matrix.M11, matrix.M22);
             }
             return (1.0, 1.0);
+        }
+
+        private void TaskBarBindingBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _bindingToTaskbar = !_bindingToTaskbar;
+            PetLinkToTaskbar();
         }
     }
 }
