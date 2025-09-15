@@ -20,6 +20,7 @@ using System.Windows.Interop;
 using System.Dynamic;
 using System.Data.SqlTypes;
 using WF = System.Windows.Forms;
+using System.Windows.Threading;
 
 namespace BongoAnimals
 {
@@ -33,6 +34,12 @@ namespace BongoAnimals
         private int _counter = 0;
         private int _selectedMonitor = 0;
         private bool _bindingToTaskbar = true;
+        
+        private bool _blockMove = false;
+        private bool _canMove = true;
+        private DispatcherTimer _longPressTimer;
+        private DateTime _pressStart;
+        private readonly TimeSpan _longPressThreshold = TimeSpan.FromSeconds(3);
 
         private static HashSet<int> _pressedKeys = new HashSet<int>();
 
@@ -60,7 +67,11 @@ namespace BongoAnimals
 
             MouseMove += Window_MouseMove;
             MouseLeftButtonUp += Window_MouseLeftButtonUp;
-            this.Deactivated += settings_deactivated;
+            this.Deactivated += Settings_deactivated;
+
+            _longPressTimer = new DispatcherTimer();
+            _longPressTimer.Interval = TimeSpan.FromMilliseconds(50);
+            _longPressTimer.Tick += LongPressTimer_Tick;
 
             Loaded += (s, e) =>
             {
@@ -74,15 +85,35 @@ namespace BongoAnimals
 
         }
 
+        private void LongPressTimer_Tick(object sender, EventArgs e)
+        {
+            var elapsed = DateTime.Now - _pressStart;
+            double progress = elapsed.TotalMilliseconds / _longPressThreshold.TotalMilliseconds;
+            UpdateHoldingProgress(progress);
+
+            if (progress >= 1.0)
+            {
+                _longPressTimer.Stop();
+                _canMove = true;
+                HoldIndicator.Visibility = Visibility.Collapsed;
+            }
+        }
+
         private void Window_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             _isDragging = false;
+            _longPressTimer.Stop();
+            HoldIndicator.Visibility = Visibility.Collapsed;
+            if (_blockMove)
+            {
+                _canMove = false;
+            }
             ReleaseMouseCapture();
         }
 
         private void Window_MouseMove(object sender, MouseEventArgs e)
         {
-            if (_isDragging)
+            if (_isDragging && _canMove)
             {
                 Point mousePos = e.GetPosition(this);
                 var (scaleX, scaleY) = GetScaleFactor();
@@ -292,6 +323,9 @@ namespace BongoAnimals
             Properties.Settings.Default.Counter = _counter.ToString();
             Properties.Settings.Default.PetLocation = new Point(Canvas.GetLeft(PetContainer), Canvas.GetTop(PetContainer));
             Properties.Settings.Default.SelectedMonitor = _selectedMonitor;
+            Properties.Settings.Default.Snapping = _bindingToTaskbar;
+            Properties.Settings.Default.BlockMove = _blockMove;
+
             Properties.Settings.Default.Save();
         }
 
@@ -300,6 +334,11 @@ namespace BongoAnimals
             _counter = Convert.ToInt32(Properties.Settings.Default.Counter);
             CounterText.Text = _counter.ToString();
             _selectedMonitor = Properties.Settings.Default.SelectedMonitor;
+            _bindingToTaskbar = Properties.Settings.Default.Snapping;
+            _blockMove = Properties.Settings.Default.BlockMove;
+
+            TaskbarSnappingText.Text = _bindingToTaskbar ? "[X] Snapping" : "[ ] Snapping";
+            MoveBlockText.Text = _blockMove ? "[X] Block moving" : "[ ] Block moving";
             MoveToScreen(_selectedMonitor);
         }
 
@@ -372,10 +411,15 @@ namespace BongoAnimals
                     UpdateSettingsPosition();
                 }), System.Windows.Threading.DispatcherPriority.Loaded);
 
-                LoadMonitors();
+                LoadSettingsPage();
 
                 SettingsPanel.Visibility = Visibility.Visible;
             }
+        }
+
+        private void LoadSettingsPage()
+        {
+            LoadMonitors();
         }
 
         private void UpdateSettingsPosition()
@@ -417,7 +461,7 @@ namespace BongoAnimals
             Canvas.SetTop(SettingsPanel, panelTop / scaleY);
         }
 
-        private void settings_deactivated(object sender, EventArgs e)
+        private void Settings_deactivated(object sender, EventArgs e)
         {
             SettingsPanel.Visibility = Visibility.Collapsed;
         }
@@ -426,7 +470,55 @@ namespace BongoAnimals
         {
             _isDragging = true;
             _dragStartPoint = e.GetPosition(this);
-            PetContainer.CaptureMouse();
+
+            if (_blockMove)
+            {
+                _pressStart = DateTime.Now;
+                _canMove = false;
+                _longPressTimer.Start();
+                HoldIndicator.Visibility = Visibility.Visible;
+                UpdateHoldingProgress(0);
+            }
+            else
+            {
+                _canMove = true;
+            }
+
+
+                PetContainer.CaptureMouse();
+        }
+
+        private void UpdateHoldingProgress(double progress)
+        {
+            double angle = 360 * progress;
+
+            double radius = 56;
+            double centerX = radius;
+            double centerY = radius;
+
+            double radians = (Math.PI / 180) * angle;
+
+            double x = centerX + radius * Math.Sin(radians);
+            double y = centerY - radius * Math.Cos(radians);
+
+            bool isLargeArc = angle > 180;
+
+            var figure = new PathFigure();
+            figure.StartPoint = new Point(centerX, centerY);
+            figure.Segments.Add(new LineSegment(new Point(centerX, centerY - radius), true));
+            figure.Segments.Add(new ArcSegment
+            {
+                Point = new Point(x, y),
+                Size = new Size(radius, radius),
+                IsLargeArc = isLargeArc,
+                SweepDirection = SweepDirection.Clockwise,
+            });
+            figure.Segments.Add(new LineSegment(new Point(centerX, centerY), true));
+
+            var geometry = new PathGeometry();
+            geometry.Figures.Add(figure);
+
+            HoldProgress.Data = geometry;
         }
 
         private void PetContainer_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -483,7 +575,7 @@ namespace BongoAnimals
             if (this.WindowState == WindowState.Normal)
                 this.WindowState = WindowState.Maximized;
 
-            changePetLocation();
+            ChangePetLocation();
             UpdateSettingsPosition();
             Console.WriteLine($"{Canvas.GetTop(PetContainer)}, {Canvas.GetLeft(PetContainer)}");
         }
@@ -494,7 +586,7 @@ namespace BongoAnimals
             MoveToScreen(MonitorsList.SelectedIndex);
         }
 
-        private void changePetLocation()
+        private void ChangePetLocation()
         {
             var screen = GetCurrentScreen();
             var (scaleX, scaleY) = GetScaleFactor();
@@ -535,7 +627,30 @@ namespace BongoAnimals
         private void TaskBarBindingBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _bindingToTaskbar = !_bindingToTaskbar;
+            TaskbarSnappingText.Text = _bindingToTaskbar ? "[X] Snapping" : "[ ] Snapping";
             PetLinkToTaskbar();
+        }
+
+        private void MoveBlockBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _blockMove = !_blockMove;
+            MoveBlockText.Text = _blockMove ? "[X] Block moving" : "[ ] Block moving";
+
+        }
+
+        private void OpenDangerousOptions(object sender, EventArgs e)
+        {
+            if (DangerousOptionsList.Visibility == Visibility.Visible)
+            {
+                DangerousOptionsList.Visibility = Visibility.Collapsed;
+                return;
+            }
+            DangerousOptionsList.Visibility = Visibility.Visible;
+        }
+
+        private void ClearCounter_MouseLeftButtonDown(object sender, EventArgs e)
+        {
+            _counter = 0;
         }
     }
 }

@@ -58,5 +58,29 @@ namespace BongoAnimals.Properties {
                 this["SelectedMonitor"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool Snapping {
+            get {
+                return ((bool)(this["Snapping"]));
+            }
+            set {
+                this["Snapping"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool BlockMove {
+            get {
+                return ((bool)(this["BlockMove"]));
+            }
+            set {
+                this["BlockMove"] = value;
+            }
+        }
     }
 }
