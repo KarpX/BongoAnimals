@@ -22,7 +22,7 @@
                 <RowDefinition Height="5"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <Image x:Name="PetImage" Source="/Assets/pet_gif.gif" Grid.Row="0" Width="112" Height="112" HorizontalAlignment="Center"/>
+            <Image x:Name="PetImage" Source="/Assets/cat-rest.png" Grid.Row="0" Width="112" Height="112" HorizontalAlignment="Center"/>
             <Grid x:Name="HoldIndicator" Width="112" Height="112" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Top">
                 <Ellipse Stroke="Transparent" StrokeThickness="3" Opacity="0.3" Fill="Transparent"/>
                 <Path x:Name="HoldProgress" Fill="Gray" Opacity="0.8"/>
@@ -46,16 +46,18 @@
 
         <StackPanel x:Name="SettingsPanel"
             Visibility="Collapsed"
-            Background="{StaticResource PrimaryBrush}"
             Width="252"
             Height="378"
             Margin="0, 0, 0, 0"
             Orientation="Vertical">
-            <Border x:Name="SettingHeader" Background="Red" Width="252" Height="35">
+            <StackPanel.Background>
+                <ImageBrush ImageSource="/Assets/settings_menu.png" Stretch="UniformToFill"/>
+            </StackPanel.Background>
+            <Border x:Name="SettingHeader" Background="Transparent" Width="252" Height="50">
                 <TextBlock Text="Settings Panel" FontSize="20" FontWeight="Bold"/>
             </Border>
             <Rectangle Height="2" Fill="{StaticResource TextBrush}"></Rectangle>
-            <Border x:Name="ChangeMonCard" Background="AntiqueWhite" Width="252" Height="Auto" >
+            <Border x:Name="ChangeMonCard" Background="Transparent" Width="252" Height="Auto" >
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -73,11 +75,11 @@
                 </Grid>
             </Border>
             
-            <Border x:Name="TaskbarSnappingBorder" Background="AntiqueWhite" Width="252" Height="Auto" MouseLeftButtonDown="TaskBarBindingBorder_MouseLeftButtonDown">
+            <Border x:Name="TaskbarSnappingBorder" Background="Transparent" Width="252" Height="Auto" MouseLeftButtonDown="TaskBarBindingBorder_MouseLeftButtonDown">
                 <TextBlock x:Name="TaskbarSnappingText" Text="[X] Snapping" FontSize="16" Foreground="{StaticResource TextBrush}"/>
             </Border>
 
-            <Border x:Name="MoveBlockBorder" Background="AntiqueWhite" Width="252" Height="Auto" MouseLeftButtonDown="MoveBlockBorder_MouseLeftButtonDown">
+            <Border x:Name="MoveBlockBorder" Background="Transparent" Width="252" Height="Auto" MouseLeftButtonDown="MoveBlockBorder_MouseLeftButtonDown">
                 <TextBlock x:Name="MoveBlockText" Text="[ ] Block moving" FontSize="16" Foreground="{StaticResource TextBrush}"/>
             </Border>
 

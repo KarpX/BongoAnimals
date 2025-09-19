@@ -15,7 +15,6 @@ using System.Windows.Shapes;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Net.NetworkInformation;
-using WpfAnimatedGif;
 using System.Windows.Interop;
 using System.Dynamic;
 using System.Data.SqlTypes;
@@ -46,6 +45,13 @@ namespace BongoAnimals
         private bool _isDragging = false;
         private Point _dragStartPoint;
 
+        private BitmapImage cat_rest;
+        private BitmapImage cat_right;
+        private BitmapImage cat_left;
+        private bool _cat_right_punch = false;
+
+        private DispatcherTimer _animalTimer;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -55,13 +61,6 @@ namespace BongoAnimals
                 UnhookWindowsHookEx(_hookID);
                 UnhookWindowsHookEx(_keyboardHookID);
             };
-
-            var image = new BitmapImage();
-            image.BeginInit();
-            image.UriSource = new Uri("Assets/pet_gif.gif", UriKind.Relative);
-            image.EndInit();
-
-            ImageBehavior.SetAnimatedSource(PetImage, image);
 
             Loaded += MainWindow_Loaded;
 
@@ -73,6 +72,12 @@ namespace BongoAnimals
             _longPressTimer.Interval = TimeSpan.FromMilliseconds(50);
             _longPressTimer.Tick += LongPressTimer_Tick;
 
+            cat_right = new BitmapImage(new Uri("Assets/cat-right.png", UriKind.Relative));
+            cat_rest = new BitmapImage(new Uri("Assets/cat-rest.png", UriKind.Relative));
+            cat_left = new BitmapImage(new Uri("Assets/cat-left.png", UriKind.Relative));
+
+            PetImage.Source = cat_rest;
+
             Loaded += (s, e) =>
             {
                 Dispatcher.Invoke(() =>
@@ -81,6 +86,14 @@ namespace BongoAnimals
                     Canvas.SetLeft(PetContainer, savedLocation.X);
                     Canvas.SetTop(PetContainer, savedLocation.Y);
                 }, System.Windows.Threading.DispatcherPriority.Render);
+            };
+
+            _animalTimer = new DispatcherTimer();
+            _animalTimer.Interval = TimeSpan.FromMilliseconds(70);
+            _animalTimer.Tick += (s, e) =>
+            {
+                PetImage.Source = cat_rest;
+                _animalTimer.Stop();
             };
 
         }
@@ -93,6 +106,7 @@ namespace BongoAnimals
 
             if (progress >= 1.0)
             {
+                Console.WriteLine("Circle filled");
                 _longPressTimer.Stop();
                 _canMove = true;
                 HoldIndicator.Visibility = Visibility.Collapsed;
@@ -254,6 +268,10 @@ namespace BongoAnimals
                     _mainWindow = (MainWindow)Application.Current.MainWindow;
                 }
                 _mainWindow._counter++;
+                _mainWindow.PetImage.Source = _mainWindow._cat_right_punch ? _mainWindow.cat_left : _mainWindow.cat_right;
+                _mainWindow._cat_right_punch = !_mainWindow._cat_right_punch;
+                _mainWindow._animalTimer.Stop();
+                _mainWindow._animalTimer.Start();
                 _mainWindow.Dispatcher.Invoke(() =>
                 {
                     _mainWindow.CounterText.Text = _mainWindow._counter.ToString();
@@ -297,15 +315,20 @@ namespace BongoAnimals
                             _mainWindow = (MainWindow)Application.Current.MainWindow;
                         }
                         _mainWindow._counter++;
+                        _mainWindow.PetImage.Source = _mainWindow._cat_right_punch ? _mainWindow.cat_left : _mainWindow.cat_right;
+                        _mainWindow._cat_right_punch = !_mainWindow._cat_right_punch;
+                        _mainWindow._animalTimer.Stop();
+                        _mainWindow._animalTimer.Start();
                         _mainWindow.Dispatcher.Invoke(() =>
                         {
+                            
                             _mainWindow.CounterText.Text = _mainWindow._counter.ToString();
                         });
                     }
 
                 }
                 else if (wParam == (IntPtr)0x0101) // WM_KEYUP
-                {
+                { 
                     _pressedKeys.Remove(vkCode);
                 }
             }

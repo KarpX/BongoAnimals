@@ -106,5 +106,13 @@
   <ItemGroup>
     <Resource Include="Assets\burger_ico.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\settings_menu.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\cat-left.png" />
+    <Resource Include="Assets\cat-rest.png" />
+    <Resource Include="Assets\cat-right.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
